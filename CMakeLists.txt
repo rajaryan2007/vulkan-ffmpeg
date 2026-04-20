@@ -1,6 +1,21 @@
 cmake_minimum_required(VERSION 3.10)
 project(vk_engine)
 
+# download ffmpeg bin from https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full-shared.7z there and paste it in the external/ffmpeg folder
+# structure of the ffmpeg folder should be like this:
+#├───bin
+#├───doc
+#├───include
+#│   ├───libavcodec
+#│   ├───libavdevice
+#│   ├───libavfilter
+#│   ├───libavformat
+#│   ├───libavutil
+#│   ├───libswresample
+#│   └───libswscale
+#├───lib
+#└───presets
+
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
