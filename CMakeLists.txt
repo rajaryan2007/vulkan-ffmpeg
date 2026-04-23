@@ -59,6 +59,7 @@ target_link_libraries(vk_engine
     ${CMAKE_SOURCE_DIR}/external/ffmpeg/lib/avutil.lib
     ${CMAKE_SOURCE_DIR}/external/ffmpeg/lib/swscale.lib
     ${CMAKE_SOURCE_DIR}/external/ffmpeg/lib/swresample.lib
+    ${CMAKE_SOURCE_DIR}/external/ffmpeg/lib/avfilter.lib
 )
 
 
@@ -72,9 +73,12 @@ add_custom_command(TARGET vk_engine POST_BUILD
         
         $<TARGET_FILE_DIR:vk_engine>
 
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_SOURCE_DIR}/assets"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory 
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets" 
         "$<TARGET_FILE_DIR:vk_engine>/assets"
-        "${CMAKE_SOURCE_DIR}/shader"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory 
+        "${CMAKE_CURRENT_SOURCE_DIR}/shader" 
         "$<TARGET_FILE_DIR:vk_engine>/shader"
+
+        
 )

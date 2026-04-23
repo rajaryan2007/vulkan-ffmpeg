@@ -16,10 +16,10 @@ public:
 
 	void CreateTextureVK(UBObuffer& Ubobuffer, LogicalDevice& logicaldev, CommandPool& commandPool, uint32_t width, uint32_t height);
 
-	// Create texture sized for video (no file loading)
+	// create texture sized for video (no file loading)
 	void CreateTextureForVideo(UBObuffer& Ubobuffer, LogicalDevice& logicaldev, CommandPool& commandPool, uint32_t width, uint32_t height);
 
-	// Upload new RGBA pixel data to the existing texture (called every frame for video)
+	// upload new RGBA pixel data to the existing texture (called every frame for video)
 	void updateTexture(const uint8_t* pixels, uint32_t width, uint32_t height, LogicalDevice& logicaldev, CommandPool& commandPool);
 	void CreateImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageUsageFlags usage, VmaMemoryUsage memUsage, vk::ImageTiling tiling,vk::raii::Image& image, VmaAllocation& imageMemory,LogicalDevice& logicaldev);
 	const vk::raii::Image& getTextureImage() const { return textureImage; }

@@ -39,9 +39,9 @@ void Application::initVulkan() {
 	
 	m_CommandPool->Init(m_logicalDevice);
 
-	// --- video player setup ---
+	// video player setup 
 	m_videoPlayer = std::make_unique<VideoPlayer>();
-	if (!m_videoPlayer->open("assets/dante.mp4")) {
+	if (!m_videoPlayer->open("C:\\Users\\rion\\Downloads\\parikbatamn.mp4")) {
 		throw std::runtime_error("Failed to open video file! Place a 'video.mp4' next to the executable.");
 	}
 
@@ -105,8 +105,6 @@ void Application::recreateSwapChain() {
 	
 	m_swapchain.createSwapChain(m_physicalDevice, m_logicalDevice, *m_window);
 	m_swapchain.createImageViews(m_logicalDevice);
-	
-
 
 }
 
@@ -142,30 +140,32 @@ void Application::drawFrame()
 
 	auto fenceResult = device.waitForFences(*inFlightFences[frameIndex], vk::True, UINT64_MAX);
 
-	// --- Video frame timing ---
-	auto now = std::chrono::high_resolution_clock::now();
-	double deltaTime = std::chrono::duration<double>(now - lastFrameTime).count();
-	lastFrameTime = now;
-	frameAccumulator += deltaTime;
-
-	double frameDuration = m_videoPlayer->getFrameDuration();
-	if (frameAccumulator >= frameDuration) {
-		frameAccumulator -= frameDuration;
-
+	// video frame timing using audio clock as master
+	bool frameUploaded = false;
+	while (m_videoPlayer->getVideoClock() <= m_videoPlayer->getAudioClock() && !m_videoPlayer->isFinished()) {
 		if (m_videoPlayer->decodeNextFrame()) {
-			// Upload new frame to GPU texture
-			m_textureVk->updateTexture(
-				m_videoPlayer->getFrameData(),
-				m_videoPlayer->getWidth(),
-				m_videoPlayer->getHeight(),
-				m_logicalDevice, *m_CommandPool);
-		} else if (m_videoPlayer->isFinished()) {
-			// Loop the video
-			m_videoPlayer->restart();
+			frameUploaded = true;
+		} else {
+			break;
 		}
 	}
 
-	m_Uniformbuffer.updateUniformBuffer(frameIndex);
+	if (frameUploaded) {
+		// upload new frame to GPU texture
+		m_textureVk->updateTexture(
+			m_videoPlayer->getFrameData(),
+			m_videoPlayer->getWidth(),
+			m_videoPlayer->getHeight(),
+			m_logicalDevice, *m_CommandPool);
+	}
+
+	if (m_videoPlayer->isFinished()) {
+		// loop the video
+		m_videoPlayer->restart();
+	}
+
+	auto extent = m_swapchain.GetExtent();
+	m_Uniformbuffer.updateUniformBuffer(frameIndex, static_cast<float>(extent.width), static_cast<float>(extent.height), static_cast<float>(m_videoPlayer->getWidth()), static_cast<float>(m_videoPlayer->getHeight()));
 	if(fenceResult != vk::Result::eSuccess)
 	{
 		throw std::runtime_error("failed to wait for fence!");

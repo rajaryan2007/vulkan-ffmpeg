@@ -27,7 +27,7 @@ public:
 
 	void createUniformBuffers(CommandPool& m_commandPool, PhysicalDevice& physicalDev, LogicalDevice& logicalDev);
 	
-	void updateUniformBuffer(uint32_t currentImage);
+	void updateUniformBuffer(uint32_t currentImage, float windowWidth, float windowHeight, float videoWidth, float videoHeight);
 	
 	~UBObuffer();
 	

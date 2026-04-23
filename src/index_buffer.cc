@@ -15,7 +15,7 @@ void UBObuffer::createDescriptorSetLayout(LogicalDevice &logicaldev,
 
   const auto &device = logicaldev.getLogicalDevice();
 
-  // 1. Define the bindings: UBO at binding 0, Sampler at binding 1
+  // define the bindings: UBO at binding 0, Sampler at binding 1
   std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {
       vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1,
                                      vk::ShaderStageFlagBits::eVertex, nullptr),
@@ -23,13 +23,13 @@ void UBObuffer::createDescriptorSetLayout(LogicalDevice &logicaldev,
           1, vk::DescriptorType::eCombinedImageSampler, 1,
           vk::ShaderStageFlagBits::eFragment, nullptr)};
 
-  // 2. Create the Layout
-  // Vulkan-Hpp is smart enough to accept the std::array directly!
+  //  Create the Layout
+  
   vk::DescriptorSetLayoutCreateInfo layoutInfo({}, bindings);
   descriptorSetLayout = vk::raii::DescriptorSetLayout(device, layoutInfo);
 
-  // 3. Set up the Descriptor Pool
-  // You defined the info for this, but didn't instantiate the pool.
+  
+  // you defined the info for this, but didn't instantiate the pool.
   std::array<vk::DescriptorPoolSize, 2> poolSizes = {
       vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer,
                              MAX_FRAMES_IN_FLIGHT),
@@ -40,7 +40,7 @@ void UBObuffer::createDescriptorSetLayout(LogicalDevice &logicaldev,
       vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
       MAX_FRAMES_IN_FLIGHT, poolSizes);
 
-  // Assuming you have a class member named `descriptorPool` of type
+  
   // vk::raii::DescriptorPool: descriptorPool = vk::raii::DescriptorPool(device,
   // poolInfo);
 }
@@ -78,8 +78,7 @@ void UBObuffer::createUniformBuffers(CommandPool &m_commandPool,
     vk::raii::Buffer buffer(nullptr);
     VmaAllocation allocation;
 
-    createBuffer(bufferSize, vk::BufferUsageFlagBits::eUniformBuffer,
-                 VMA_MEMORY_USAGE_CPU_TO_GPU, buffer, allocation, logicalDev);
+    createBuffer(bufferSize, vk::BufferUsageFlagBits::eUniformBuffer,VMA_MEMORY_USAGE_CPU_TO_GPU, buffer, allocation, logicalDev);
 
     uniformBuffers.emplace_back(std::move(buffer));
     uniformBuffersAllocation.emplace_back(allocation);
@@ -90,9 +89,22 @@ void UBObuffer::createUniformBuffers(CommandPool &m_commandPool,
   }
 }
 
-void UBObuffer::updateUniformBuffer(uint32_t currentImage) {
-  // identity matrices for fullscreen quad (NDC passthrough)
-  ubo.model = glm::mat4(1.0f);
+void UBObuffer::updateUniformBuffer(uint32_t currentImage, float windowWidth, float windowHeight, float videoWidth, float videoHeight) {
+  float windowAspect = windowWidth / windowHeight;
+  float videoAspect = videoWidth / videoHeight;
+
+  float scaleX = 1.0f;
+  float scaleY = 1.0f;
+
+  if (windowAspect > videoAspect) {
+    // window is wider than video. Scale down width to fit height.
+    scaleX = videoAspect / windowAspect;
+  } else {
+    // window is taller than video. scale down height to fit width.
+    scaleY = windowAspect / videoAspect;
+  }
+
+  ubo.model = glm::scale(glm::mat4(1.0f), glm::vec3(scaleX, scaleY, 1.0f));
   ubo.view = glm::mat4(1.0f);
   ubo.proj = glm::mat4(1.0f);
   // flip Y axis — Vulkan has Y-down, pipeline expects CCW front face
@@ -143,7 +155,7 @@ void UBObuffer::createDescriptorPool(LogicalDevice &logicalDev,
                                      const CommandPool &commandPool,
                                      uint32_t MAX_FRAMES_IN_FLIGHT) {
 
-  //	const auto& MAX_FRAMES_IN_FLIGHT = commandPool.GetMaxFramesInFlight();
+  //const auto& MAX_FRAMES_IN_FLIGHT = commandPool.GetMaxFramesInFlight();
 
   std::array<vk::DescriptorPoolSize, 2> poolSizes = {
       vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer,

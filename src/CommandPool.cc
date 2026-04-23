@@ -134,7 +134,7 @@ void CommandPool::recordCommandBuffer(vk::raii::Buffer& vertexBuffer,GrapicPilel
 	);
 
 	
-    vk::ClearValue  clearColor = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 1.0f, 1.0f});
+    vk::ClearValue  clearColor = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
     
 	const auto& swapChainImageView= swapchian.GetImageView();
 	vk::RenderingAttachmentInfo attachmentInfo{};
