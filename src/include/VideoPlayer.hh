@@ -9,11 +9,11 @@
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
-#include <libswresample/swresample.h> // <--- Fixes the undefined error
+#include <libswresample/swresample.h> 
 #include <libswscale/swscale.h>
 #include <libavutil/channel_layout.h>
 #include <libavutil/imgutils.h>
-#include <libavutil/opt.h>            // Required for setting options
+#include <libavutil/opt.h>          
 }
 #include "miniaudio.h"
 
@@ -44,7 +44,18 @@ public:
 	double getAudioClock() const { return audioClock.load(); }
 	double getVideoClock() const { return videoClock; }
 
+	bool isPlaying() const { return isplaying; }
+    
+	bool isForward5Seconds() const { return isfroward5seconds; }
+	bool isBackward5Seconds() const { return isbackward5seconds; }
+	void seekToSecond(double second);
+	void playpause();
+	void forward5Seconds();
+	void backward5Seconds();
 	
+	double getProgressBar();       // returns current position in seconds
+	void setProgressBar(double seconds); // seeks to the given second
+	double getTotalDuration() const; // total video duration in seconds
 	void restart();
 
 private:
@@ -68,6 +79,7 @@ private:
 
 	std::atomic<double> audioClock{0.0};
 	double videoClock = 0.0;
+	double seekTargetTime = 0.0;
 
 	uint8_t* rgbaBuffer = nullptr;
 	int videoStreamIndex = -1;
@@ -77,5 +89,10 @@ private:
 	int height = 0;
 	double frameRate = 30.0;
 	bool finished = false;
+
+	bool isplaying = true;
+	bool isfroward5seconds = false;
+	bool isbackward5seconds = false;
+
 	bool audioInitialized = false;
 };

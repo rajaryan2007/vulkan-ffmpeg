@@ -15,6 +15,7 @@
 #include <memory>
 #include <utility>
 #include <chrono>
+#include "imguiRender.hh"
 
 
 
@@ -58,6 +59,8 @@ private:
 	std::shared_ptr<CommandPool> m_CommandPool;
 	std::unique_ptr<TextureVK> m_textureVk;
 	std::unique_ptr<VideoPlayer> m_videoPlayer;
+	ImguiRender m_imguiRender;
+	vk::raii::DescriptorPool m_imguiPool = nullptr;
 	uint32_t& frameIndex = m_CommandPool->GetFrameIndex();
 	std::vector<vk::raii::Semaphore> presentCompleteSemaphores;
 	std::vector<vk::raii::Semaphore> renderFinishedSemaphores;
@@ -67,5 +70,6 @@ private:
 	// Video frame timing
 	std::chrono::high_resolution_clock::time_point lastFrameTime;
 	double frameAccumulator = 0.0;
+	bool m_videoLoaded = false;
 	
 };

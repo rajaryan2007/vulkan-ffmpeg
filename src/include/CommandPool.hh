@@ -26,7 +26,7 @@ public:
 		vk::AccessFlags2        dst_access_mask,
 		vk::PipelineStageFlags2 src_stage_mask,
 		vk::PipelineStageFlags2 dst_stage_mask);
-	 void recordCommandBuffer(vk::raii::Buffer& vertexBuffer, GrapicPileline& grapic, uint32_t imageIndex, Swapchain& swapchian, const vk::raii::Buffer& IndexBuffer, const std::vector<uint16_t>& indices, const std::vector<vk::raii::DescriptorSet>& descriptorSets);
+	 void recordCommandBuffer(vk::raii::Buffer& vertexBuffer, GrapicPileline& grapic, uint32_t imageIndex, Swapchain& swapchian, const vk::raii::Buffer& IndexBuffer, const std::vector<uint16_t>& indices, const std::vector<vk::raii::DescriptorSet>& descriptorSets, class ImguiRender* imguiRender = nullptr,class VideoPlayer* m_videoplayer = nullptr);
 	const vk::raii::CommandBuffer&  GetCommandBuffer() const {return m_commandBuffer[frameIndex];}
 	constexpr int GetMaxFramesInFlight() const { return MAX_FRAMES_IN_FLIGHT; }
     uint32_t& GetFrameIndex() { return frameIndex; }

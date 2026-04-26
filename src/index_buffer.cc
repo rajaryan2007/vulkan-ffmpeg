@@ -216,3 +216,12 @@ void UBObuffer::createDescriptorSets(LogicalDevice &logicalDev,
     logicalDev.getLogicalDevice().updateDescriptorSets(descriptorWrites, {});
   }
 }
+
+void UBObuffer::resetDescriptorPool(LogicalDevice& logicalDev) {
+  // Wait for any in-flight work to finish
+  logicalDev.getLogicalDevice().waitIdle();
+  // Release the old descriptor sets
+  descriptorSets.clear();
+  // Reset the pool so all sets can be re-allocated
+  descriptorPool.reset();
+}

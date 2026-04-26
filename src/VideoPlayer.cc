@@ -9,6 +9,12 @@ void VideoPlayer::run_audio(AVPacket *packet) {
     return;
 
   while (avcodec_receive_frame(audioCodecCtx, frame) == 0) {
+    
+    double pts = frame->pts * av_q2d(formatCtx->streams[audioStreamIndex]->time_base);
+    if (pts < seekTargetTime) {
+      continue;
+    }
+
     // Prepare output buffer for resampling
     uint8_t *outData = nullptr;
     // calculate max possible samples out
@@ -18,7 +24,7 @@ void VideoPlayer::run_audio(AVPacket *packet) {
 	// convert audio to stereo 16-bit
     int actualOut = swr_convert(swrCtx, &outData, outSamples, (const uint8_t **)frame->data,frame->nb_samples);
 
-    // Push to buffer (Locked so the audio thread doesn't read while we write)
+    // push to buffer (Locked so the audio thread doesn't read while we write)
     size_t sizeInBytes = actualOut * 2 * 2;
     std::lock_guard<std::mutex> lock(audioMutex);
     audioBuffer.insert(audioBuffer.end(), outData, outData + sizeInBytes);
@@ -130,7 +136,7 @@ bool VideoPlayer::open(const std::string &filepath) {
     return false;
   }
 
-  // find decoder
+  
   codec = avcodec_find_decoder(codecParams->codec_id);
   if (!codec) {
     LOG("FFmpeg: Unsupported codec");
@@ -284,10 +290,15 @@ bool VideoPlayer::decodeNextFrame() {
       videoClock = frame->pts * av_q2d(formatCtx->streams[videoStreamIndex]->time_base);
     }
 
+    
+    if (videoClock < seekTargetTime) {
+      continue;
+    }
+
     // convert YUV -> RGBA
     sws_scale(swsCtx, frame->data, frame->linesize, 0, height, rgbaFrame->data,rgbaFrame->linesize);
 
-    return true; // frame ready!
+    return true; // frame ready
   }
 }
 
@@ -298,19 +309,121 @@ void VideoPlayer::audio_callback(ma_device *pDevice, void *pOutput,const void *p
 
   std::lock_guard<std::mutex> lock(player->audioMutex);
 
-  size_t bytesNeeded = frameCount * 2 * 2; // frames * channels * bytes_per_sample
+  size_t bytesNeeded = frameCount * 2 * 2; 
   size_t bytesToCopy = (std::min)(bytesNeeded, player->audioBuffer.size());
 
   if (bytesToCopy > 0) {
     memcpy(pOutput, player->audioBuffer.data(), bytesToCopy);
-    // remove the data we just played from the front of the vector
+
     player->audioBuffer.erase(player->audioBuffer.begin(),player->audioBuffer.begin() + bytesToCopy);
   }
 
-  // advance audio clock based on samples played
   player->audioClock.store(player->audioClock.load() + (double)frameCount / 48000.0);
 
-  // if we have no more data, miniaudio handles the silence automatically
+  
+}
+
+
+void VideoPlayer::playpause()
+{
+  if (!formatCtx || !codecCtx)
+        return;
+
+  if(isplaying)  {
+    ma_device_stop(&audioDevice);
+    isplaying = false;
+  }
+  else
+  {
+    ma_device_start(&audioDevice);
+    isplaying = true;
+  }
+      
+}
+
+void VideoPlayer::forward5Seconds()
+{
+    if (!formatCtx || !codecCtx)
+        return;
+
+    double targetTime = videoClock + 5.0;
+
+    
+    if (formatCtx->duration != AV_NOPTS_VALUE) {
+        double duration = (double)formatCtx->duration / AV_TIME_BASE;
+        if (targetTime > duration) targetTime = duration;
+    }
+
+    int64_t seekTarget = (int64_t)(targetTime / av_q2d(formatCtx->streams[videoStreamIndex]->time_base));
+    av_seek_frame(formatCtx, videoStreamIndex, seekTarget, AVSEEK_FLAG_BACKWARD);
+    avcodec_flush_buffers(codecCtx);
+    if (audioCodecCtx) avcodec_flush_buffers(audioCodecCtx);
+    finished = false;
+    videoClock = targetTime;
+    audioClock.store(targetTime);
+
+    std::lock_guard<std::mutex> lock(audioMutex);
+    audioBuffer.clear();
+}
+
+void VideoPlayer::backward5Seconds()
+{
+    if (!formatCtx || !codecCtx)
+        return;
+
+    double targetTime = videoClock - 5.0;
+    if (targetTime < 0.0) targetTime = 0.0;
+
+    int64_t seekTarget = (int64_t)(targetTime / av_q2d(formatCtx->streams[videoStreamIndex]->time_base));
+    av_seek_frame(formatCtx, videoStreamIndex, seekTarget, AVSEEK_FLAG_BACKWARD);
+    avcodec_flush_buffers(codecCtx);
+    if (audioCodecCtx) avcodec_flush_buffers(audioCodecCtx);
+    finished = false;
+    videoClock = targetTime;
+    audioClock.store(targetTime);
+
+    std::lock_guard<std::mutex> lock(audioMutex);
+    audioBuffer.clear();
+}
+
+
+
+
+double VideoPlayer::getProgressBar()
+{
+	
+	if (!formatCtx || !codecCtx)
+		return 0.0;
+	return videoClock;
+}
+
+double VideoPlayer::getTotalDuration() const
+{
+	if (!formatCtx || formatCtx->duration == AV_NOPTS_VALUE)
+		return 0.0;
+	return (double)formatCtx->duration / AV_TIME_BASE;
+}
+
+
+void VideoPlayer::setProgressBar(double seconds)
+{
+	
+	if (!formatCtx || !codecCtx)
+		return;
+
+	double total = getTotalDuration();
+	if (seconds < 0.0) seconds = 0.0;
+	if (total > 0.0 && seconds > total) seconds = total;
+
+	int64_t seekTarget = (int64_t)(seconds / av_q2d(formatCtx->streams[videoStreamIndex]->time_base));
+	av_seek_frame(formatCtx, videoStreamIndex, seekTarget, AVSEEK_FLAG_BACKWARD);
+	avcodec_flush_buffers(codecCtx);
+	if (audioCodecCtx) avcodec_flush_buffers(audioCodecCtx);
+	finished = false;
+	videoClock = seconds;
+	audioClock.store(seconds);
+	std::lock_guard<std::mutex> lock(audioMutex);
+	audioBuffer.clear();
 }
 
 void VideoPlayer::restart() {

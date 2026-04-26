@@ -37,7 +37,7 @@ file(GLOB_RECURSE INCLUDE_FILES
 )
 
 add_subdirectory(external/glfw)
-
+add_subdirectory(external/imgui)
 find_package(Vulkan REQUIRED)
 
 add_executable(vk_engine
@@ -45,15 +45,18 @@ add_executable(vk_engine
    ${INCLUDE_FILES}
         src/include/demo.hh
         src/demo.cc
- "src/include/miniaudio.h")
+        external/imgui/backends/imgui_impl_glfw.cpp
+        external/imgui/backends/imgui_impl_vulkan.cpp
+        "src/include/miniaudio.h")
 
 set_target_properties(${project_name} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/assets")
 
-target_include_directories(vk_engine PRIVATE src/include/ external/glm/ external/utils/ external/ffmpeg/include/)
+target_include_directories(vk_engine PRIVATE src/include/ external/glm/ external/utils/ external/ffmpeg/include/  external/imgui/)
 
 target_link_libraries(vk_engine
     glfw
     Vulkan::Vulkan
+    ImGui
     ${CMAKE_SOURCE_DIR}/external/ffmpeg/lib/avcodec.lib
     ${CMAKE_SOURCE_DIR}/external/ffmpeg/lib/avformat.lib
     ${CMAKE_SOURCE_DIR}/external/ffmpeg/lib/avutil.lib

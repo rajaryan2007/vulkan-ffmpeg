@@ -29,6 +29,30 @@ static inline std::vector<char> readFile(const std::string& filename)
 	return buffer;
 }
 
+struct vkCoreutils {
+	vk::raii::Device device;
+	vk::raii::PhysicalDevice physicalDevice;
+	vk::raii::CommandPool commandPool;
+	vk::raii::DescriptorPool descriptorPool;
+	vk::raii::DescriptorSetLayout descriptorSetLayout;
+	vk::raii::PipelineLayout pipelineLayout;
+	vk::raii::Pipeline graphicsPipeline;
+	vk::raii::Instance instance;
+	vk::raii::SurfaceKHR surface;
+
+	void init(LogicalDevice& logical, vk::raii::Instance& instance, vk::raii::SurfaceKHR& surface, vk::raii::PhysicalDevice& physicalDevice, vk::raii::Device& device, vk::raii::CommandPool& commandPool, vk::raii::DescriptorPool& descriptorPool, vk::raii::DescriptorSetLayout& descriptorSetLayout, vk::raii::PipelineLayout& pipelineLayout, vk::raii::Pipeline& graphicsPipeline)
+	{
+		this->instance = std::move(instance);
+		this->surface = std::move(surface);
+		this->physicalDevice = std::move(physicalDevice);
+		this->device = std::move(device);
+		this->commandPool = std::move(commandPool);
+		this->descriptorPool = std::move(descriptorPool);
+		this->descriptorSetLayout = std::move(descriptorSetLayout);
+		this->pipelineLayout = std::move(pipelineLayout);
+		this->graphicsPipeline = std::move(graphicsPipeline);
+	};
+};
 
 
 struct Vertex {

@@ -43,6 +43,9 @@ public:
 
 	void createDescriptorSets(LogicalDevice& logicalDev, const CommandPool& commandPool, uint32_t MAX_FRAMES_IN_FLIGHT, const Swapchain& swapchain);
 
+	// Reset pool so descriptor sets can be re-allocated 
+	void resetDescriptorPool(LogicalDevice& logicalDev);
+
 
 private:
 	vk::raii::DescriptorSetLayout descriptorSetLayout = nullptr;

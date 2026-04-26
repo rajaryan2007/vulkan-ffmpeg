@@ -112,8 +112,11 @@ void CommandPool::transitionImageLayout(const vk::raii::Image& image, vk::ImageL
 
 }
 
-void CommandPool::recordCommandBuffer(vk::raii::Buffer& vertexBuffer,GrapicPileline& grapic,uint32_t imageIndex, Swapchain& swapchian,const vk::raii::Buffer& IndexBuffer, const std::vector<uint16_t>& indices, const std::vector<vk::raii::DescriptorSet>& descriptorSets)
-{ 
+#include "imguiRender.hh"
+#include "VideoPlayer.hh"
+
+void CommandPool::recordCommandBuffer(vk::raii::Buffer& vertexBuffer,GrapicPileline& grapic,uint32_t imageIndex, Swapchain& swapchian,const vk::raii::Buffer& IndexBuffer, const std::vector<uint16_t>& indices, const std::vector<vk::raii::DescriptorSet>& descriptorSets, ImguiRender* imguiRender, VideoPlayer* m_videoplayer)
+{
 	const auto& pipelineLayout = grapic.GetPipelineLayout();
 	auto& cmd = m_commandBuffer[frameIndex];
     
@@ -176,6 +179,10 @@ void CommandPool::recordCommandBuffer(vk::raii::Buffer& vertexBuffer,GrapicPilel
 
 	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, *descriptorSets[frameIndex], nullptr);
 	cmd.drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+
+	if (imguiRender) {
+		imguiRender->RenderImgui(cmd,(float)extent.width,(float)extent.height, *m_videoplayer);
+	}
 
 	cmd.endRendering();
 
