@@ -10,6 +10,7 @@ void Application::run() {
   mainLoop();
   cleanup();
 }
+
 Application::Application()
     : m_window(nullptr), presentCompleteSemaphores(),
       renderFinishedSemaphores(), inFlightFences(),
@@ -135,9 +136,15 @@ void Application::initWindow() {
   glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallback);
 }
 void Application::drawFrame() {
+  
   const auto &queue = m_logicalDevice.GetQueue();
   const auto &device = m_logicalDevice.getLogicalDevice();
   auto MAX_FRAMES_IN_FLIGHT = m_CommandPool->GetMaxFramesInFlight();
+  double syncThreeshold = 0.1;
+  double audioTime = m_videoPlayer->getAudioClock();
+  double videoTime = m_videoPlayer->getVideoClock();
+  double diff = videoTime - audioTime;
+  
   queue.waitIdle();
   const auto &swapChain = m_swapchain.getSwapChain();
 
@@ -167,30 +174,38 @@ void Application::drawFrame() {
       }
   }
 
-  //  video decode + upload 
+   
   if (m_videoLoaded) {
       //video frame timing using audio clock as master
       bool frameUploaded = false;
-      while (m_videoPlayer->getVideoClock() <= m_videoPlayer->getAudioClock() &&
-             !m_videoPlayer->isFinished()) {
-        if (m_videoPlayer->decodeNextFrame()) {
-          frameUploaded = true;
-        } else {
-          break;
-        }
-      }
+	  if (m_videoLoaded && m_videoPlayer->isPlaying()) {
+		  double audioTime = m_videoPlayer->getAudioClock();
+		  double videoTime = m_videoPlayer->getVideoClock();
+		  double diff = videoTime - audioTime;
 
-      if (frameUploaded) {
-        // upload new frame to gpu texture
-        m_textureVk->updateTexture(
-            m_videoPlayer->getFrameData(), m_videoPlayer->getWidth(),
-            m_videoPlayer->getHeight(), m_logicalDevice, *m_CommandPool);
-      }
+		  // sync_threshold: how much desync we tolerate (e.g., 10ms - 40ms)
+		  double sync_threshold = std::max(0.01, 1.0 / m_videoPlayer->getFrameRate());
 
-      if (m_videoPlayer->isFinished()) {
-        // loop the video
-        m_videoPlayer->restart();
-      }
+		  if (diff > sync_threshold) {
+			  // video is too far ahead stay on the current frame
+			
+		  }
+		  else {
+			  //  decode the next frame.
+			  if (m_videoPlayer->decodeNextFrame()) {
+				  m_textureVk->updateTexture(
+					  m_videoPlayer->getFrameData(), m_videoPlayer->getWidth(),
+					  m_videoPlayer->getHeight(), m_logicalDevice, *m_CommandPool);
+			  }
+
+			  // If we are REALLY far behind 
+			  // skip another frame immediately to catch up.
+			  if (diff < -0.1) {
+				  m_videoPlayer->decodeNextFrame();
+
+			  }
+		  }
+	  }
   }
 
   auto extent = m_swapchain.GetExtent();

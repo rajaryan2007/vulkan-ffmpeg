@@ -3,6 +3,7 @@
 #include "Logger.h"
 #include <stdexcept>
 
+
 void VideoPlayer::run_audio(AVPacket *packet) {
   int ret = avcodec_send_packet(audioCodecCtx, packet);
   if (ret < 0)
@@ -312,6 +313,7 @@ void VideoPlayer::audio_callback(ma_device *pDevice, void *pOutput,const void *p
   size_t bytesNeeded = frameCount * 2 * 2; 
   size_t bytesToCopy = (std::min)(bytesNeeded, player->audioBuffer.size());
 
+ 
   if (bytesToCopy > 0) {
     memcpy(pOutput, player->audioBuffer.data(), bytesToCopy);
 
@@ -319,7 +321,9 @@ void VideoPlayer::audio_callback(ma_device *pDevice, void *pOutput,const void *p
   }
 
   player->audioClock.store(player->audioClock.load() + (double)frameCount / 48000.0);
-
+  double currentPTS = player->audioClock.load();
+  player->audioClockBase.store(currentPTS);
+  player->audioClockUpdateSystemTime.store(player->get_system_time());
   
 }
 
@@ -361,6 +365,9 @@ void VideoPlayer::forward5Seconds()
     finished = false;
     videoClock = targetTime;
     audioClock.store(targetTime);
+    audioClockBase.store(targetTime);
+    audioClockUpdateSystemTime.store(get_system_time());
+    seekTargetTime = targetTime;
 
     std::lock_guard<std::mutex> lock(audioMutex);
     audioBuffer.clear();
@@ -381,6 +388,9 @@ void VideoPlayer::backward5Seconds()
     finished = false;
     videoClock = targetTime;
     audioClock.store(targetTime);
+    audioClockBase.store(targetTime);
+    audioClockUpdateSystemTime.store(get_system_time());
+    seekTargetTime = targetTime;
 
     std::lock_guard<std::mutex> lock(audioMutex);
     audioBuffer.clear();
@@ -422,6 +432,9 @@ void VideoPlayer::setProgressBar(double seconds)
 	finished = false;
 	videoClock = seconds;
 	audioClock.store(seconds);
+	audioClockBase.store(seconds);
+	audioClockUpdateSystemTime.store(get_system_time());
+	seekTargetTime = seconds;
 	std::lock_guard<std::mutex> lock(audioMutex);
 	audioBuffer.clear();
 }
@@ -433,7 +446,10 @@ void VideoPlayer::restart() {
     if (audioCodecCtx) avcodec_flush_buffers(audioCodecCtx);
     finished = false;
     audioClock.store(0.0);
+    audioClockBase.store(0.0);
+    audioClockUpdateSystemTime.store(get_system_time());
     videoClock = 0.0;
+    seekTargetTime = 0.0;
     
     std::lock_guard<std::mutex> lock(audioMutex);
     audioBuffer.clear();

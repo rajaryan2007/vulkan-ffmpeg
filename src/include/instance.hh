@@ -24,7 +24,7 @@ public:
 	static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT severity, vk::DebugUtilsMessageTypeFlagsEXT type, const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void*);
 
 private:
-	vk::raii::Context m_context  ;
+	vk::raii::Context m_context;
 	vk::raii::Instance m_instance = nullptr;
 	vk::raii::DebugUtilsMessengerEXT m_debugMessenger = nullptr;
 };

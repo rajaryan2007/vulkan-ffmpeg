@@ -4,6 +4,7 @@
 #include <vector>
 #include <mutex>
 #include <atomic>
+#include <chrono>
 
 // FFmpeg is C, so we need extern "C"
 extern "C" {
@@ -41,7 +42,23 @@ public:
 	double getFrameDuration() const { return 1.0 / frameRate; }
 	bool isFinished() const { return finished; }
 	
-	double getAudioClock() const { return audioClock.load(); }
+	double get_system_time() const {
+		return std::chrono::duration_cast<std::chrono::microseconds>(
+			std::chrono::high_resolution_clock::now().time_since_epoch()
+		).count() / 1000000.0;
+	}
+
+	double getAudioClock() const {
+		
+		double base = audioClockBase.load();
+		double last_update = audioClockUpdateSystemTime.load();
+
+		if (!isplaying) return base;
+
+		double elapsed = get_system_time() - last_update;
+		return base + elapsed;
+	}
+
 	double getVideoClock() const { return videoClock; }
 
 	bool isPlaying() const { return isplaying; }
@@ -75,9 +92,12 @@ private:
     ma_decoder audioDecoder;
 	double pts_seconds = 0.0;
 	std::vector<uint8_t> audioBuffer;
-	std::mutex audioMutex;
+	mutable std::mutex audioMutex;
 
 	std::atomic<double> audioClock{0.0};
+	std::atomic<double> audioClockBase{ 0.0 };
+	std::atomic<double> audioClockUpdateSystemTime{ 0.0 };
+
 	double videoClock = 0.0;
 	double seekTargetTime = 0.0;
 

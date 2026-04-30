@@ -105,8 +105,6 @@ vk::raii::Instance& VulkanInstance::instance()
 	return m_instance;
 }
 
-
-
 std::vector<const char*> VulkanInstance::getRequiredExtensions()
 {   
 	uint32_t glfwExtensionCount = 0;
